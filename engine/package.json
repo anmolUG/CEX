@@ -6,6 +6,7 @@
   "scripts": {
     "start": "tsx index.ts",
     "test": "tsx engine.test.ts",
+    "bench": "tsx bench.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
