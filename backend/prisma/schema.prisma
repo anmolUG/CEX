@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+enum OrderType {
+  MARKET
+  LIMIT
+}
+
+enum OrderSide {
+  BUY
+  SELL
+}
+
+enum OrderStatus {
+  OPEN
+  PARTIALLY_FILLED
+  FILLED
+  CANCELLED
+}
+
+model User {
+  id        String    @id @default(uuid())
+  username  String    @unique
+  password  String
+  createdAt DateTime  @default(now())
+  orders    Order[]
+  fills     Fill[]
+  deposits  Deposit[]
+}
+
+model Deposit {
+  id        String   @id @default(uuid())
+  userId    String
+  asset     String
+  amount    Decimal  @db.Decimal(20, 8)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Stock {
+  id     String  @id @default(uuid())
+  name   String
+  symbol String  @unique
+  orders Order[]
+  fills  Fill[]
+}
+
+// Live balances are held in-memory by the engine (source of truth).
+
+model Order {
+  id        String      @id @default(uuid())
+  userId    String
+  stockId   String
+  type      OrderType
+  side      OrderSide
+  price     Decimal?    @db.Decimal(20, 8)
+  qty       Decimal     @db.Decimal(20, 8)
+  filledQty Decimal     @default(0) @db.Decimal(20, 8)
+  status    OrderStatus @default(OPEN)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation(fields: [userId], references: [id])
+  stock     Stock       @relation(fields: [stockId], references: [id])
+  fills     Fill[]
+
+  @@index([userId, status])
+}
+
+model Fill {
+  id        String    @id @default(uuid())
+  orderId   String
+  userId    String
+  stockId   String
+  price     Decimal   @db.Decimal(20, 8)
+  qty       Decimal   @db.Decimal(20, 8)
+  side      OrderSide
+  createdAt DateTime  @default(now())
+  order     Order     @relation(fields: [orderId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+  stock     Stock     @relation(fields: [stockId], references: [id])
+
+  @@index([userId])
+}
