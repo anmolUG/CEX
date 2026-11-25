@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "start": "tsx index.ts",
+    "seed": "tsx seed.ts",
     "test:e2e": "tsx test.e2e.ts",
     "typecheck": "tsc --noEmit"
   },

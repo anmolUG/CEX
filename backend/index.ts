@@ -359,6 +359,33 @@ app.get("/depth/:symbol", async (req, res) => {
     res.json({ market: depth.market, bids: formatLevels(depth.bids), asks: formatLevels(depth.asks) });
 });
 
+app.get("/trades/:symbol", async (req, res) => {
+    const symbol = String(req.params.symbol).toUpperCase();
+    const stock = await prisma.stock.findUnique({ where: { symbol } });
+    if (!stock) {
+        res.status(404).json({ error: "Market not found" });
+        return;
+    }
+
+    // Each matched trade inserts one BUY fill and one SELL fill; query BUY side to get unique trades.
+    const fills = await prisma.fill.findMany({
+        where: { stockId: stock.id, side: "BUY" },
+        select: { id: true, price: true, qty: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+    });
+
+    res.json({
+        market: symbol,
+        trades: fills.map((f) => ({
+            id: f.id,
+            price: Number(f.price),
+            qty: Number(f.qty),
+            createdAt: f.createdAt,
+        })),
+    });
+});
+
 app.get("/orders", authMiddleware, async (req, res) => {
     const orders = await prisma.order.findMany({
         where: { userId: req.userId! },
